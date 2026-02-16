@@ -1,0 +1,60 @@
+services:
+  server:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.node-dev
+    working_dir: /app
+    ports:
+      - "8086:8086"
+    environment:
+      - NODE_ENV=development
+      - CHOKIDAR_USEPOLLING=1
+      - PNPM_STORE_PATH=/pnpm-store
+    volumes:
+      - .:/app
+      - pnpm-store:/pnpm-store
+      - root-node-modules:/app/node_modules
+      - shared-node-modules:/app/packages/shared/node_modules
+      - server-node-modules:/app/packages/server/node_modules
+    command: >
+      sh -lc "
+        pnpm config set store-dir /pnpm-store &&
+        pnpm install &&
+        pnpm --filter @game/shared build &&
+        (pnpm --filter @game/shared dev &) &&
+        pnpm --filter @game/server dev
+      "
+
+  client:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.node-dev
+    working_dir: /app
+    ports:
+      - "5173:5173"
+    environment:
+      - NODE_ENV=development
+      - CHOKIDAR_USEPOLLING=1
+      - PNPM_STORE_PATH=/pnpm-store
+      - VITE_WS_URL=ws://localhost:8086
+    volumes:
+      - .:/app
+      - pnpm-store:/pnpm-store
+      - root-node-modules:/app/node_modules
+      - shared-node-modules:/app/packages/shared/node_modules
+      - client-node-modules:/app/packages/client/node_modules
+    command: >
+      sh -lc "
+        pnpm config set store-dir /pnpm-store &&
+        pnpm install &&
+        pnpm --filter @game/client dev --host 0.0.0.0 --port 5173
+      "
+    depends_on:
+      - server
+
+volumes:
+  pnpm-store:
+  root-node-modules:
+  shared-node-modules:
+  server-node-modules:
+  client-node-modules:

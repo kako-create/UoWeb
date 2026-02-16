@@ -1,0 +1,8 @@
+FROM node:lts-alpine
+
+RUN apk add --no-cache bash
+
+WORKDIR /app
+
+# habilita pnpm via corepack (Node LTS já vem com corepack)
+RUN corepack enable
